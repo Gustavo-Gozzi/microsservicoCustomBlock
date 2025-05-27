@@ -2,27 +2,77 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import requests
 import os
+from json import loads
 
 app = Flask(__name__)
 CORS(app)
 
+def checaatributo(json):
+    items = json["items"][0]["values"]
+    atributoJson = []
+    chavesatributoJson = []
+    atributoJsonInterno = []
+    chavesJsonInterno = []
+    for item in items:
+
+        try:
+            teste = loads(items[item])              # Tenta transformar o valor em dict ou list
+            if type(teste).__name__ == 'list':      # verifica se o tipo é igual a list 
+                atributoJson.append(item)           # adiciona no array atributoJson
+
+                for valores in teste:                     # navega no atributo JSON
+                    for valor in valores:                 # navega nas chaves do atributo Json
+                        chavesatributoJson.append(valor)  # adiciona essas chaves no array chavesJsonIn
+
+                        if type(valores[valor]).__name__ == 'list':     #verifica se algum dos valores dentro do atributo JSON também é um Json
+                            atributoJsonInterno.append(valor)
+                            for coisa in valores[valor][0]:             # caso sim, navega por esse item
+                                   chavesJsonInterno.append(coisa)       # adiciona ele no array lista chavesJsonInJson
+
+        except:
+            pass
+    
+    if atributoJson:
+        conteudo = {
+        "atribujoJson": atributoJson,
+        "chavesAtributoJson": chavesatributoJson,
+        "atributoJsonInterno": atributoJsonInterno,
+        "chavesJsonInterno": chavesJsonInterno
+        }
+        return conteudo
+
+    else:
+        return False
+
+
 def chavesJson(json):
     try:
-        items = json["items"]
-        listaId = list(items[0]["keys"].keys())
-        print(listaId)
-        listaChaves = list(items[0]["values"].keys())
+        keys = json["items"][0]["keys"]
+        values = json["items"][0]["values"]
 
         atributos = []
         primaryKeys = []
 
-        for ids in listaId:
-            primaryKeys.append(ids)
+        for key in keys:
+            primaryKeys.append(key)
 
-        for chaves in listaChaves:
-            atributos.append(chaves)
+        for value in values:
+            atributos.append(value)
 
-        return {
+        verificacao = checaatributo(json)
+
+        if verificacao:
+            return {
+                "id": primaryKeys,
+                "atributos": atributos,
+                "atributojson": verificacao["atribujoJson"],
+                "chaveatributojson": verificacao["chavesAtributoJson"],
+                "atributoJsonInterno": verificacao["atributoJsonInterno"],
+                "chavesJsonInterno": verificacao["chavesJsonInterno"],
+                "codigo": 200
+            }
+        else: 
+            return {
                 "id": primaryKeys,
                 "atributos": atributos,
                 "codigo": 200
